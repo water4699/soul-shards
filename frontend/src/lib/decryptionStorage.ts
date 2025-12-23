@@ -28,8 +28,7 @@ export function saveDecryptedEntries(
 ): void {
   try {
     const key = getStorageKey(userAddress, contractAddress);
-    const entriesArray = Array.from(entries.entries()).map(([date, entry]) => ({
-      date,
+    const entriesArray = Array.from(entries.entries()).map(([, entry]) => ({
       ...entry,
     }));
     localStorage.setItem(key, JSON.stringify(entriesArray));

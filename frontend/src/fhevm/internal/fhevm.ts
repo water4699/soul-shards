@@ -180,13 +180,11 @@ async function resolve(
     };
 
     if (_mockChains.hasOwnProperty(chainId)) {
-      if (!rpcUrl) {
-        rpcUrl = _mockChains[chainId];
-      }
-      return { isMock: true, chainId, rpcUrl };
+      const finalRpcUrl: string = _mockChains[chainId]!;
+      return { isMock: true, chainId, rpcUrl: finalRpcUrl };
     }
 
-    return { isMock: false, chainId, rpcUrl };
+    return rpcUrl ? { isMock: false, chainId, rpcUrl } : { isMock: false, chainId };
   } catch (error: any) {
     if (typeof providerOrUrl === "string") {
       const _mockChains: Record<number, string> = {
@@ -222,7 +220,7 @@ export const createFhevmInstance = async (parameters: {
     if (parameters.onStatusChange) parameters.onStatusChange(status);
   };
 
-  const { signal, onStatusChange, provider: providerOrUrl, mockChains } = parameters;
+  const { provider: providerOrUrl, mockChains } = parameters;
 
   let isMock: boolean;
   let rpcUrl: string | undefined;

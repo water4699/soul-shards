@@ -3,7 +3,7 @@ import { useAccount, useChainId, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { useFhevm } from "@/fhevm/useFhevm";
 import { getContractAddress } from "@/abi/Addresses";
-import { EncryptedPrivateExpenseLog__factory } from "../../../types";
+import { EncryptedPrivateExpenseLog__factory } from "../../../types/factories/contracts/EncryptedPrivateExpenseLog__factory";
 
 
 interface ExpenseEntry {

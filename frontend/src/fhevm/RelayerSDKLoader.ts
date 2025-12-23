@@ -14,7 +14,7 @@ export type FhevmWindowType = {
 };
 
 export class RelayerSDKLoader {
-  private _trace?: TraceType;
+  private _trace: TraceType | undefined;
 
   constructor(options: { trace?: TraceType }) {
     this._trace = options.trace;
@@ -101,7 +101,7 @@ function isFhevmRelayerSDKType(
 
 export function isFhevmWindowType(
   win: unknown,
-  trace?: TraceType
+  _trace?: TraceType
 ): win is FhevmWindowType {
   if (typeof win === "undefined" || win === null || typeof win !== "object") {
     return false;
@@ -120,7 +120,7 @@ function objHasProperty<
   obj: T,
   propertyName: K,
   propertyType: V,
-  trace?: TraceType
+  _trace?: TraceType
 ): boolean {
   if (!obj || typeof obj !== "object") {
     return false;

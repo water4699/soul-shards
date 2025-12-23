@@ -122,7 +122,7 @@ export function useFhevm(parameters: {
           console.log("[useFhevm] Creating FHEVM instance...");
           const inst = await createFhevmInstance({
             provider: thisProvider,
-            mockChains: thisRpcUrlsByChainId,
+            ...(thisRpcUrlsByChainId && { mockChains: thisRpcUrlsByChainId }),
             signal: thisSignal,
             onStatusChange: (status) => {
               console.log("[useFhevm] Status change:", status);

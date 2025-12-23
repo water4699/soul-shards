@@ -18,7 +18,6 @@ import { useExpenseLog } from "@/hooks/useExpenseLog";
 import { getContractAddress } from "@/abi/Addresses";
 import { loadDecryptedEntries } from "@/lib/decryptionStorage";
 import { getCategoryName, EXPENSE_CATEGORIES, getLevelLabel, getSatisfactionLabel } from "@/lib/expenseLabels";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from "recharts";
 
 interface ExpenseEntry {
   date: number;
@@ -34,7 +33,6 @@ const Analytics: React.FC = () => {
   const chainId = useChainId();
   const CONTRACT_ADDRESS = import.meta.env.VITE_CONTRACT_ADDRESS || getContractAddress(chainId);
   const { getAllEntries, entryCount } = useExpenseLog(CONTRACT_ADDRESS);
-  const [entries, setEntries] = useState<ExpenseEntry[]>([]);
   const [decryptedEntries, setDecryptedEntries] = useState<Map<number, ExpenseEntry>>(new Map());
 
   // Load data
@@ -54,9 +52,8 @@ const Analytics: React.FC = () => {
 
           const startDate = parseInt(new Date(today.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString().split('T')[0]?.replace(/-/g, '') || '') || 0;
           
-          const allEntries = await getAllEntries(startDate, todayNum);
-          setEntries(allEntries);
-          
+          await getAllEntries(startDate, todayNum);
+
           const loaded = loadDecryptedEntries(address, CONTRACT_ADDRESS);
           setDecryptedEntries(loaded);
         } catch (error) {
@@ -113,13 +110,17 @@ const Analytics: React.FC = () => {
         .sort((a, b) => b[1] - a[1]);
       
       if (sortedCategories.length > 0) {
-        const [topCatId, count] = sortedCategories[0];
-        const spaceIndex = EXPENSE_CATEGORIES[topCatId]?.indexOf(' ') || -1;
-        topCategory = spaceIndex !== -1 
-          ? EXPENSE_CATEGORIES[topCatId].substring(spaceIndex + 1).trim()
-          : EXPENSE_CATEGORIES[topCatId] || "Unknown";
-        topCategoryChange = `${count} entries`;
-        topCategoryDescription = `Most frequent category with ${count} ${count === 1 ? 'entry' : 'entries'}`;
+        const topCategoryEntry = sortedCategories[0];
+        if (topCategoryEntry) {
+          const [topCatId, count] = topCategoryEntry;
+          const categoryName = EXPENSE_CATEGORIES[topCatId] || "Unknown";
+          const spaceIndex = categoryName.indexOf(' ');
+          topCategory = spaceIndex !== -1
+            ? categoryName.substring(spaceIndex + 1).trim()
+            : categoryName;
+          topCategoryChange = `${count} entries`;
+          topCategoryDescription = `Most frequent category with ${count} ${count === 1 ? 'entry' : 'entries'}`;
+        }
       }
     }
 
@@ -129,14 +130,18 @@ const Analytics: React.FC = () => {
     let frequencyDescription = "Average transactions per week";
     if (decryptedArray.length > 0) {
       const sorted = decryptedArray.sort((a, b) => a.date - b.date);
-      const firstDate = new Date(sorted[0].date * 86400000);
-      const lastDate = new Date(sorted[sorted.length - 1].date * 86400000);
-      const daysDiff = Math.max(1, Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
-      const weeks = daysDiff / 7;
-      const perWeek = weeks > 0 ? (decryptedArray.length / weeks).toFixed(1) : decryptedArray.length.toFixed(1);
-      frequency = `${perWeek}/week`;
-      frequencyChange = `${decryptedArray.length} total`;
-      frequencyDescription = `Average of ${perWeek} transactions per week`;
+      const firstEntry = sorted[0];
+      const lastEntry = sorted[sorted.length - 1];
+      if (firstEntry && lastEntry) {
+        const firstDate = new Date(firstEntry.date * 86400000);
+        const lastDate = new Date(lastEntry.date * 86400000);
+        const daysDiff = Math.max(1, Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)));
+        const weeks = daysDiff / 7;
+        const perWeek = weeks > 0 ? (decryptedArray.length / weeks).toFixed(1) : decryptedArray.length.toFixed(1);
+        frequency = `${perWeek}/week`;
+        frequencyChange = `${decryptedArray.length} total`;
+        frequencyDescription = `Average of ${perWeek} transactions per week`;
+      }
     }
 
     return [

@@ -306,7 +306,7 @@ const Dashboard: React.FC = () => {
       <div>
         <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
         <div className="grid gap-4 md:grid-cols-3">
-          {quickActions.map((action, index) => {
+          {quickActions.map((action) => {
             const Icon = action.icon;
             return (
               <Link key={action.title} to={action.href}>

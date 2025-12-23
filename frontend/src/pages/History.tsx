@@ -10,13 +10,6 @@ import {
   History as HistoryIcon
 } from "lucide-react";
 
-// Helper function to get amount from level
-const getAmountFromLevel = (level: number): number => {
-  const ranges: Record<number, number> = {
-    1: 5, 2: 20, 3: 40, 4: 75, 5: 150, 6: 250, 7: 400, 8: 750, 9: 1500, 10: 2500,
-  };
-  return ranges[level] || 0;
-};
 
 const HistoryPage: React.FC = () => {
 
