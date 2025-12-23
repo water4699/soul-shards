@@ -3,7 +3,171 @@ import { useAccount, useChainId, useWalletClient } from "wagmi";
 import { ethers } from "ethers";
 import { useFhevm } from "@/fhevm/useFhevm";
 import { getContractAddress } from "@/abi/Addresses";
-import { EncryptedPrivateExpenseLog__factory } from "../../../types";
+// Contract ABI - extracted from artifacts
+const ENCRYPTED_PRIVATE_EXPENSE_LOG_ABI = [
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "date", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "name": "EntryAdded",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "date", "type": "uint256" },
+      { "internalType": "externalEuint8", "name": "encryptedCategory", "type": "bytes32" },
+      { "internalType": "bytes", "name": "categoryProof", "type": "bytes" },
+      { "internalType": "externalEuint8", "name": "encryptedLevel", "type": "bytes32" },
+      { "internalType": "bytes", "name": "levelProof", "type": "bytes" },
+      { "internalType": "externalEuint8", "name": "encryptedEmotion", "type": "bytes32" },
+      { "internalType": "bytes", "name": "emotionProof", "type": "bytes" }
+    ],
+    "name": "addEntry",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256[]", "name": "dates", "type": "uint256[]" },
+      { "internalType": "externalEuint8[]", "name": "encryptedCategories", "type": "bytes32[]" },
+      { "internalType": "bytes[]", "name": "categoryProofs", "type": "bytes[]" },
+      { "internalType": "externalEuint8[]", "name": "encryptedLevels", "type": "bytes32[]" },
+      { "internalType": "bytes[]", "name": "levelProofs", "type": "bytes[]" },
+      { "internalType": "externalEuint8[]", "name": "encryptedEmotions", "type": "bytes32[]" },
+      { "internalType": "bytes[]", "name": "emotionProofs", "type": "bytes[]" }
+    ],
+    "name": "batchAddEntries",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "date", "type": "uint256" }
+    ],
+    "name": "entryExists",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "date", "type": "uint256" }
+    ],
+    "name": "getCategory",
+    "outputs": [{ "internalType": "euint8", "name": "encryptedCategory", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "date", "type": "uint256" }
+    ],
+    "name": "getEmotion",
+    "outputs": [{ "internalType": "euint8", "name": "encryptedEmotion", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "startDate", "type": "uint256" },
+      { "internalType": "uint256", "name": "endDate", "type": "uint256" }
+    ],
+    "name": "getEmotionLevelCorrelation",
+    "outputs": [
+      { "internalType": "euint8", "name": "emotionLevelProduct", "type": "bytes32" },
+      { "internalType": "euint8", "name": "emotionSquared", "type": "bytes32" },
+      { "internalType": "euint8", "name": "levelSquared", "type": "bytes32" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "startDate", "type": "uint256" },
+      { "internalType": "uint256", "name": "endDate", "type": "uint256" }
+    ],
+    "name": "getEncryptedAnalysisData",
+    "outputs": [
+      { "internalType": "euint8", "name": "totalEncryptedCategory", "type": "bytes32" },
+      { "internalType": "euint8", "name": "totalEncryptedLevel", "type": "bytes32" },
+      { "internalType": "euint8", "name": "totalEncryptedEmotion", "type": "bytes32" },
+      { "internalType": "uint256", "name": "entryCount", "type": "uint256" }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "date", "type": "uint256" }
+    ],
+    "name": "getEntry",
+    "outputs": [
+      { "internalType": "euint8", "name": "category", "type": "bytes32" },
+      { "internalType": "euint8", "name": "level", "type": "bytes32" },
+      { "internalType": "euint8", "name": "emotion", "type": "bytes32" },
+      { "internalType": "uint256", "name": "timestamp", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getEntryCount",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "startDate", "type": "uint256" },
+      { "internalType": "uint256", "name": "endDate", "type": "uint256" }
+    ],
+    "name": "getEntryDatesInRange",
+    "outputs": [{ "internalType": "uint256[]", "name": "dates", "type": "uint256[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" }
+    ],
+    "name": "getLastEntryDate",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "user", "type": "address" },
+      { "internalType": "uint256", "name": "date", "type": "uint256" }
+    ],
+    "name": "getLevel",
+    "outputs": [{ "internalType": "euint8", "name": "encryptedLevel", "type": "bytes32" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "protocolId",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+];
 
 
 interface ExpenseEntry {
@@ -13,6 +177,7 @@ interface ExpenseEntry {
   emotion: number;
   timestamp: number;
 }
+
 
 interface UseExpenseLogState {
   contractAddress: string | undefined;
@@ -98,8 +263,8 @@ export function useExpenseLog(contractAddress: string | undefined): UseExpenseLo
     }
 
     try {
-      const contract = EncryptedPrivateExpenseLog__factory.connect(finalContractAddress, ethersProvider);
-      const count = await contract.getEntryCount(address);
+      const contract = new ethers.Contract(finalContractAddress, ENCRYPTED_PRIVATE_EXPENSE_LOG_ABI, ethersProvider);
+      const count = await (contract as any).getEntryCount(address);
       setEntryCount(Number(count));
     } catch (error: any) {
       console.error("Error loading entry count:", error);
@@ -167,18 +332,17 @@ export function useExpenseLog(contractAddress: string | undefined): UseExpenseLo
         setMessage("Submitting to blockchain...");
 
         // Call contract with externalEuint8 values and their respective input proofs
-        const contract = EncryptedPrivateExpenseLog__factory.connect(finalContractAddress, ethersSigner);
+        const contract = new ethers.Contract(finalContractAddress, ENCRYPTED_PRIVATE_EXPENSE_LOG_ABI, ethersSigner);
 
         // Use handles[0] as the externalEuint8 value
-        const tx = await contract.addEntry(
-          date,
+        const tx = await (contract as any).addEntry(
+          BigInt(date),
           encryptedCategoryResult.handles?.[0] || new Uint8Array(), // externalEuint8 value for category
           encryptedCategoryResult.inputProof,     // proof for category
           encryptedLevelResult.handles?.[0] || new Uint8Array(),    // externalEuint8 value for level
           encryptedLevelResult.inputProof,        // proof for level
           encryptedEmotionResult.handles?.[0] || new Uint8Array(),  // externalEuint8 value for emotion
-          encryptedEmotionResult.inputProof,      // proof for emotion
-          { gasLimit: 5000000 }
+          encryptedEmotionResult.inputProof      // proof for emotion
         );
         await tx.wait();
 
@@ -217,15 +381,15 @@ export function useExpenseLog(contractAddress: string | undefined): UseExpenseLo
         setIsLoading(true);
         setMessage("Fetching encrypted entry...");
 
-        const contract = EncryptedPrivateExpenseLog__factory.connect(finalContractAddress, ethersProvider);
-        const exists = await contract.entryExists(address, date);
+        const contract = new ethers.Contract(finalContractAddress, ENCRYPTED_PRIVATE_EXPENSE_LOG_ABI, ethersProvider);
+        const exists = await (contract as any).entryExists(address, BigInt(date));
         if (!exists) {
           return null;
         }
 
         // Get the encrypted data from contract (returns euint8 values as uint256)
-        const result = await contract.getEntry(address, date);
-        const [categoryValue, levelValue, emotionValue, timestamp] = [result.category, result.level, result.emotion, result.timestamp];
+        const result = await (contract as any).getEntry(address, BigInt(date));
+        const [categoryValue, levelValue, emotionValue, timestamp] = result;
 
         console.log("[useExpenseLog] ===== Decryption Debug Info =====");
         console.log("[useExpenseLog] Category value:", categoryValue.toString());
@@ -437,8 +601,8 @@ Please try:
           return [];
         }
 
-        const contract = EncryptedPrivateExpenseLog__factory.connect(finalContractAddress, minimalProvider);
-        const dates = await contract.getEntryDatesInRange(address, startDate, endDate);
+        const contract = new ethers.Contract(finalContractAddress, ENCRYPTED_PRIVATE_EXPENSE_LOG_ABI, minimalProvider);
+        const dates = await (contract as any).getEntryDatesInRange(address, BigInt(startDate), BigInt(endDate));
         console.log("Found dates:", dates);
 
         const entries: ExpenseEntry[] = [];
@@ -449,11 +613,8 @@ Please try:
           const dateNum = Number(date);
           try {
             // Get the encrypted entry from contract
-            const result = await contract.getEntry(address, dateNum);
-            const categoryValue = result.category;
-            const levelValue = result.level;
-            const emotionValue = result.emotion;
-            const timestamp = result.timestamp;
+            const result = await (contract as any).getEntry(address, BigInt(dateNum));
+            const [categoryValue, levelValue, emotionValue, timestamp] = result;
 
             // Create entry with encrypted values (will be decrypted later for analysis)
             const entry: ExpenseEntry = {
